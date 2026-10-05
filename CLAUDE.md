@@ -12,7 +12,7 @@ This file covers the whole repo. More specific guidance loads only when relevant
 | `server/CLAUDE.md` | backend package layout, adding endpoints, missing endpoints |
 | `client/CLAUDE.md` | frontend state, routing, API client |
 | `.claude/rules/data.md` | `server/data/`, data loading, Pydantic models |
-| `.claude/rules/testing.md` | `tests/` |
+| `.claude/rules/testing.md` | always: RED-GREEN workflow for building from a spec, plus backend test conventions |
 | `.claude/rules/i18n.md` | locales, currency, translated names |
 | `.claude/rules/design-system.md` | `.vue` files |
 
