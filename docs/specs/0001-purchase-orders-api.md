@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | Approved (2026-10-05). Implemented on branch `feat/purchase-orders-api`; becomes Implemented when merged |
+| **Status** | Implemented (approved and merged 2026-10-05) |
 | **Owner** | |
 | **Created** | 2026-10-05 |
-| **Related** | ADR-0002, ADR-0007; follow-up listed in PR #1; commit 890756f, plus the date-rule change (see Decisions, D4) |
+| **Related** | ADR-0002, ADR-0007; implemented in [PR #3](https://github.com/n-theoga-maersk/cc-labs-exercise/pull/3) (merge bf35a75); spec added in PR #2 |
 
 ## Summary
 Implement the two purchase-order endpoints that the client already calls but the backend didn't serve, so that a purchase order (PO) can be raised against a backlog item and `/api/backlog` reflects it. This spec covers the backend only. UI wiring is a follow-up.
