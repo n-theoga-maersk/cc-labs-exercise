@@ -1,4 +1,5 @@
 """Purchase orders raised against backlog items (SPEC-0001). Stored in memory only (ADR-0002)."""
+import threading
 from datetime import datetime
 from typing import List
 
@@ -8,6 +9,10 @@ from app.data import backlog_items, purchase_orders
 from app.models import CreatePurchaseOrderRequest, PurchaseOrder
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase-orders"])
+
+# Sync endpoints run in a threadpool: ID generation and append must happen as one step,
+# or two concurrent POSTs could both read the same length and get the same ID.
+_create_lock = threading.Lock()
 
 
 def _require_backlog_item(backlog_item_id: str) -> None:
@@ -20,15 +25,16 @@ def create_purchase_order(request: CreatePurchaseOrderRequest):
     """Create a purchase order for a backlog item; new orders always start as Pending"""
     _require_backlog_item(request.backlog_item_id)
 
-    purchase_order = {
-        **request.model_dump(),
-        # Counting is safe while POs are never deleted
-        "id": f"PO-{len(purchase_orders) + 1:04d}",
-        "status": "Pending",
-        "created_date": datetime.now().isoformat(timespec="seconds"),
-    }
-    # Append to the shared list (never rebind it): planning.get_backlog reads this same object
-    purchase_orders.append(purchase_order)
+    with _create_lock:
+        purchase_order = {
+            **request.model_dump(),
+            # Counting is safe while POs are never deleted
+            "id": f"PO-{len(purchase_orders) + 1:04d}",
+            "status": "Pending",
+            "created_date": datetime.now().isoformat(timespec="seconds"),
+        }
+        # Append to the shared list (never rebind it): planning.get_backlog reads this same object
+        purchase_orders.append(purchase_order)
     return purchase_order
 
 

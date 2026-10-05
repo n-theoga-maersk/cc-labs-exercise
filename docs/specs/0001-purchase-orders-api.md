@@ -21,7 +21,7 @@ Implement the two purchase-order endpoints that the client already calls but the
 - `/api/backlog` reports `has_purchase_order: true` for an item once a PO exists for it.
 
 ## Non-goals
-- UI for creating or viewing POs. No component calls either `api.js` function yet (see Follow-ups).
+- UI for creating or viewing POs. `Dashboard.vue` already has unfinished "Create PO" / "View PO" buttons, but they open a `PurchaseOrderModal` component that doesn't exist, so no component calls either `api.js` function yet (see Follow-ups).
 - Persisting POs across restarts (ADR-0002).
 - Editing, cancelling, approving, rejecting or receiving POs, or any supplier master data.
 
@@ -72,7 +72,11 @@ Response (`id`, `status` and `created_date` are set by the server):
 ```
 
 ## Data and models
-- **Request constraints** (`CreatePurchaseOrderRequest`): `quantity > 0`, `unit_cost >= 0`, and `supplier_name` not empty. Surrounding whitespace is trimmed, so `"   "` counts as empty and is rejected. Pydantic returns the 422.
+- **Request constraints** (`CreatePurchaseOrderRequest`): `quantity > 0`, `unit_cost >= 0` and finite, and `supplier_name` not empty. Surrounding whitespace is trimmed, so `"   "` counts as empty and is rejected. Pydantic returns the 422.
+- **`NaN` / `Infinity`:** Python's JSON parser accepts these non-standard literals.
+  - Without `allow_inf_nan=False`, `Infinity` would be stored and served as `null`.
+  - Even when the value is rejected, FastAPI's default 422 handler echoes it back, and the response can't be serialised, so the client gets a **500**. This is also true of `-Infinity`, which `ge=0` already rejects.
+  - The app's `RequestValidationError` handler (`server/app/main.py`) delegates to FastAPI's default, and only when that fails does it re-encode the errors with non-finite numbers as strings. Every other 422 response is unchanged.
 - **Server-set fields:** the request model has no `id`, `status` or `created_date`, and any extra fields the client sends are ignored. A body containing `"status": "Approved"` still creates a `Pending` PO.
 - **`expected_delivery_date`** (D4) stays a string in both models, so it's stored and returned exactly as sent. It's validated by two annotated types in `server/app/models.py`:
   ```python
@@ -85,15 +89,16 @@ Response (`id`, `status` and `created_date` are set by the server):
     - **`fromisoformat`:** the pattern alone would accept `"2025-02-30"`.
     - **`strict=True` on the string:** this rejects the number `1760918400`.
     - **Not a `date` type:** a lax `date` field accepts Unix timestamps and `"2025-10-20T00:00:00"`. A `date` with `Field(strict=True)` rejects every request, because FastAPI validates the already-parsed Python values, not raw JSON.
-  - **"Today"** is the **server's local date**, checked on each request, so today itself is accepted. A client in a timezone ahead of the server could see its "today" rejected for a few hours. That's acceptable for this demo.
+  - **"Today"** is the **server's local date**, checked on each request, so today itself is accepted. A client in a timezone *behind* the server can have its own "today" rejected for a few hours after the server's midnight. For example, with the server on UTC, a client in New York at 20:00 on 5 Oct sends `2026-10-05` when the server is already on 6 Oct. That's acceptable for this demo, but the UI follow-up must handle it.
   - `IsoDate` stays available for date fields that may be in the past.
 - **Status** (D5): `PurchaseOrder.status` is `Literal["Pending", "Approved", "Rejected"]`. Nothing in this spec moves a PO out of `Pending`.
 - **Store:** POs are appended to `app.data.purchase_orders`, the one intended exception to the read-only rule. They go into that **same list object**; the name is never rebound, because `planning.get_backlog` holds the list by reference.
 - **Persistence:** POs are lost on restart, which ADR-0002 accepts for this demo. `purchase_orders.json` stays `[]`.
-- **IDs** (D3): generated as `f"PO-{len(purchase_orders) + 1:04d}"`. Counting the list is safe because POs are never deleted. If deletion is added later, this needs a separate counter. Numbers past 9999 grow to 5 digits.
+- **IDs** (D3): generated as `f"PO-{len(purchase_orders) + 1:04d}"`. ID generation and the append happen together under a `threading.Lock`, because FastAPI runs sync endpoints in a threadpool, and two concurrent POSTs could otherwise read the same length and get the same ID. Counting the list is safe because POs are never deleted. If deletion is added later, this needs a separate counter. Numbers past 9999 grow to 5 digits.
 
 ## Implementation
-- **Router:** `server/app/routers/purchase_orders.py` (`prefix="/api/purchase-orders"`, tag `purchase-orders`), registered in `server/app/main.py` (ADR-0007). Both endpoints share `_require_backlog_item`, which returns 404 for an unknown item.
+- **Router:** `server/app/routers/purchase_orders.py` (`prefix="/api/purchase-orders"`, tag `purchase-orders`), registered in `server/app/main.py` (ADR-0007). Both endpoints share `_require_backlog_item`, which returns 404 for an unknown item. A module-level `_create_lock` covers ID generation and the append.
+- **Error handler:** a `RequestValidationError` handler in `server/app/main.py` keeps 422s with non-finite inputs JSON-safe (see Data and models).
 - **Models:** `IsoDate`, `FutureIsoDate`, `PurchaseOrderStatus` and the request constraints, in `server/app/models.py`.
 - **Created date:** `datetime.now().isoformat(timespec="seconds")`, the server's local time with no timezone suffix, matching the format of other dates in the data.
 - **Frontend:** `getPurchaseOrderByBacklogItem` was renamed to `getPurchaseOrdersByBacklogItem` in `client/src/api.js`. It had no callers.
@@ -110,15 +115,18 @@ None. This follows ADR-0007 (one router per area) and ADR-0002 (in-memory store)
   - Today or any later real date → accepted, including leap days.
   - Before today → 422 with `"date must be today or later"`.
   - An impossible date, a format other than `YYYY-MM-DD`, a timestamp or a datetime → 422.
+- `unit_cost` of `NaN`, `Infinity` or `-Infinity` → a JSON 422, never a 500 or a stored `null`.
+- Concurrent `POST`s get distinct, sequential IDs, because of the lock.
 - After a server restart, POs disappear and `has_purchase_order` reverts to `false`. This is expected.
 
 ## Test plan
-`tests/backend/test_purchase_orders.py`: 29 tests in `TestPurchaseOrderEndpoints`.
+`tests/backend/test_purchase_orders.py`: 32 tests in `TestPurchaseOrderEndpoints`.
 - **Fixtures:**
-  - An autouse fixture restores `app.data.purchase_orders` in place after each test, using slice assignment so the list object stays the same.
-  - Date helpers (`days_from_today`, `next_leap_day`) keep the tests valid as time passes. No fixed future dates are used.
+  - The autouse `baseline` fixture yields the POs that existed before the test, and restores the store in place afterwards. Assertions compare against that baseline, so the tests also pass with pre-existing POs. This was checked by seeding two POs: the new tests pass 32/32, and the earlier version failed 14 of 29.
+  - Date helpers (`days_from_today`, `next_leap_day`) are called inside test bodies, never in `parametrize` arguments, so a run that crosses midnight still computes "today" correctly. No fixed future dates are used.
 - **Create:** 201 with the server-set fields; sequential IDs; client-sent `status` and `id` ignored; unknown backlog item gives 404 and leaves the store unchanged.
-- **Validation:** 422 for `quantity` 0 or negative, negative `unit_cost`, empty or blank `supplier_name`, and a missing field.
+- **Validation:** 422 for `quantity` 0 or negative, negative `unit_cost`, empty or blank `supplier_name`, and a missing field. A JSON 422 pointing at `unit_cost` for raw `NaN`, `Infinity` and `-Infinity`.
+- **Concurrency:** not unit-tested. A race test would pass with or without the lock, which would give false assurance. The lock is covered by code review.
 - **Delivery date:**
   - 422 for impossible dates (`2025-02-30`, `2025-02-29`, `2025-13-01`) and wrong formats (`2025/10/20`, `20251020`, a datetime, a timestamp, `""`, `null`).
   - 422 with the "today or later" message for yesterday and `2020-01-01`.
@@ -135,10 +143,14 @@ Checked 2026-10-05. The full test suite ran in-process. The live checks ran agai
 - [x] `POST` with `backlog_item_id: "999"` returns 404, and `quantity: 0` returns 422.
 - [x] `POST` with `expected_delivery_date` of `"2025-02-30"`, `1760918400`, yesterday or `"2020-01-01"` returns 422. Yesterday's message says "today or later". Today's date returns 201 and is echoed back unchanged.
 - [x] `api.js` exposes `getPurchaseOrdersByBacklogItem`, and the singular name is gone.
-- [x] The new tests pass, and the existing 40 still pass: 69/69. Everything existing is unchanged: all 2,143 responses are identical, and the OpenAPI change only adds 2 paths and 2 schemas.
+- [x] `POST` with a raw `NaN` or `Infinity` `unit_cost` returns a JSON 422, not a 500, and nothing is stored.
+- [x] The new tests pass, and the existing 40 still pass: 72/72. Everything existing is unchanged: all 2,143 responses are identical, and the OpenAPI change only adds 2 paths and 2 schemas.
 - [x] `server/CLAUDE.md` no longer lists these endpoints as missing.
 
 ## Follow-ups
 - Approve or reject a PO (for example `PATCH /api/purchase-orders/{id}` with `{"status": ...}`). That needs its own spec for which transitions are allowed, and for whether a rejected PO still counts towards `has_purchase_order`.
-- UI: a "Raise PO" action and PO details in `BacklogDetailModal.vue` (via the vue-expert subagent), with strings in all three locales. The date picker should default to today or later, to match D4.
+- UI (via the vue-expert subagent, with strings in all three locales). `Dashboard.vue` already has the start of this, but it's broken:
+  - It renders `<PurchaseOrderModal>`, which doesn't exist and isn't imported, so "Create PO" does nothing.
+  - Its button checks `item.purchase_order_id`, which the API never returns. It should use `has_purchase_order`, or fetch the POs. Today, "Create PO" would show again after a reload, inviting duplicates.
+  - The date picker should default to today or later, to match D4. It should also allow for the timezone caveat in Data and models.
 - `/api/tasks`, the other set of endpoints the client calls that doesn't exist, which needs its own spec.

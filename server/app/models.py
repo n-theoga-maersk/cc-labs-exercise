@@ -96,6 +96,6 @@ class CreatePurchaseOrderRequest(BaseModel):
     backlog_item_id: str
     supplier_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     quantity: int = Field(gt=0)
-    unit_cost: float = Field(ge=0)
+    unit_cost: float = Field(ge=0, allow_inf_nan=False)
     expected_delivery_date: FutureIsoDate
     notes: Optional[str] = None

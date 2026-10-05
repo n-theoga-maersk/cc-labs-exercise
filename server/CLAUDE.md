@@ -32,8 +32,7 @@ Modules import with absolute paths from `server/` (`from app.data import orders`
 2. Register a new router in the `include_router` loop in `app/main.py`.
 3. Add a model to `app/models.py` and set `response_model`. The dashboard, spending and reports endpoints currently return untyped dicts.
 4. Reuse `apply_filters` / `filter_by_month` for the standard filters rather than re-implementing them. A missing value or `'all'` means "don't filter". Category and status match case-insensitively, warehouse matches exactly.
-5. Write endpoints must mutate the shared list in `app.data` in place (`.append`, slice assignment), never rebind it. Other routers hold it by reference. Tests that write must restore it (see the autouse fixture in `tests/backend/test_purchase_orders.py`).
-6. Date-only request fields use the `IsoDate` type in `app/models.py`, or `FutureIsoDate` if the date must be today or later. A plain `date` type would accept Unix timestamps, and `Field(strict=True)` on `date` rejects every FastAPI body.
+5. For writes to the shared data and for request-field types (dates, floats), follow `.claude/rules/data.md`.
 
 ## Endpoints the client calls that don't exist yet
 - `GET/POST /api/tasks`, `DELETE /api/tasks/{id}`, `PATCH /api/tasks/{id}` (toggle completion), used by the tasks UI in `client/src/App.vue`. These need a spec (`/spec`).
