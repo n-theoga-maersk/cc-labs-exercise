@@ -254,6 +254,6 @@ Inventory management demo with:
 - Filter system (warehouse, category, month, status)
 - Mock JSON data (no real DB)
 
-Data flow: **Vue filters → api.js → FastAPI → mock_data.py**
+Data flow: **Vue filters → api.js → FastAPI routers (server/app/routers/) → server/app/data.py**
 
 Execute efficiently. Write clean code. Follow patterns.

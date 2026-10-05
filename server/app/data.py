@@ -1,20 +1,24 @@
 """
 Mock data for the Factory Inventory Management System
 This module loads sample data from JSON files for inventory items, orders, demand forecasts, and backlog items.
-All data is from September 2025 and includes warehouse, category, and date fields for filtering.
+Data covers all months of 2025 and includes warehouse, category, and date fields for filtering.
+
+Everything is loaded once at import and shared by all routers: treat these objects as read-only
+(except purchase_orders, which is the store new purchase orders are appended to).
 """
 
 import json
 import os
 
-# Get the directory where this file is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# server/ is the parent of this package; JSON files live in server/data/
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 
 def load_json_file(filename):
     """Load data from a JSON file in the data directory"""
     filepath = os.path.join(DATA_DIR, filename)
-    with open(filepath, 'r') as f:
+    # Explicit encoding: the locale default on Windows (cp1252) garbles characters like '±'
+    with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 # Load all datasets from JSON files
