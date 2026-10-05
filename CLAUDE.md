@@ -1,74 +1,57 @@
 # CLAUDE.md
 
-Factory Inventory Management System Demo with GitHub integration - Full-stack application with Vue 3 frontend, Python FastAPI backend, and in-memory mock data (no database).
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Critical Tool Usage Rules
+Factory Inventory Management System demo: Vue 3 + Vite frontend, Python FastAPI backend, in-memory data loaded from JSON (no database, no real auth).
 
-### Subagents
-Use the Task tool with these specialized subagents for appropriate tasks:
+## Where guidance lives
+This file covers the whole repo. More specific guidance loads only when relevant:
 
-- **vue-expert**: Use for Vue 3 frontend features, UI components, styling, and client-side functionality
-  - Examples: Creating components, fixing reactivity issues, performance optimization, complex state management
-  - **MANDATORY RULE: ANY time you need to create or significantly modify a .vue file, you MUST delegate to vue-expert**
-- **code-reviewer**: Use after writing significant code to review quality and best practices
-- **Explore**: Use for understanding codebase structure, searching for patterns, or answering questions about how components work
-- **general-purpose**: Use for complex multi-step tasks or when other agents don't fit
+| File | Loaded when working on |
+|---|---|
+| `server/CLAUDE.md` | backend package layout, adding endpoints, missing endpoints |
+| `client/CLAUDE.md` | frontend state, routing, API client |
+| `.claude/rules/data.md` | `server/data/`, data loading, Pydantic models |
+| `.claude/rules/testing.md` | `tests/` |
+| `.claude/rules/i18n.md` | locales, currency, translated names |
+| `.claude/rules/design-system.md` | `.vue` files |
 
-### Skills
-- **backend-api-test** skill: Use when writing or modifying tests in `tests/backend` directory with pytest and FastAPI TestClient
+Keep each fact in exactly one of these files; link to it rather than copying it.
 
-### MCP Tools
-- **ALWAYS use GitHub MCP tools** (`mcp__github__*`) for ALL GitHub operations
-  - Exception: Local branches only - use `git checkout -b` instead of `mcp__github__create_branch`
-- **ALWAYS use Playwright MCP tools** (`mcp__playwright__*`) for browser testing
-  - Test against: `http://localhost:3000` (frontend), `http://localhost:8001` (API)
+*Why* the architecture is the way it is lives in `docs/adr/`. Read the relevant ADR before reversing one of those decisions, and add a new ADR (see `docs/adr/README.md`) when you make an architectural change.
 
-## Stack
-- **Frontend**: Vue 3 + Composition API + Vite (port 3000)
-- **Backend**: Python FastAPI (port 8001)
-- **Data**: JSON files in `server/data/` loaded via `server/mock_data.py`
+## Tool rules
+- **vue-expert subagent**: **MANDATORY** for creating or significantly modifying any `.vue` file.
+- **code-reviewer** after significant changes; **security-auditor** for security review.
+- **backend-api-test skill** when writing or modifying tests in `tests/backend/`.
+- **GitHub MCP tools** (`mcp__github__*`, server defined in `.claude/mcp-config.json`, needs `GITHUB_PERSONAL_ACCESS_TOKEN`) for GitHub operations, except local branches: use `git checkout -b`.
+- **Playwright MCP tools** (`mcp__playwright__*`, from `.mcp.json`) for browser testing.
 
-## Quick Start
+## Commands
 
 ```bash
-# Backend
-cd server
-uv run python main.py
+# Backend: http://localhost:8001, docs at /docs. server/ holds the only Python env.
+cd server && uv venv && uv sync          # first time
+cd server && uv run python main.py
 
-# Frontend
-cd client
-npm install && npm run dev
+# Frontend: http://localhost:3000/dashboard/
+cd client && npm install                 # first time
+cd client && npm run dev
+cd client && npm run build               # the only check the client has (no linter, no tests)
+
+# Backend tests (must run from server/; single-file/single-test forms in .claude/rules/testing.md)
+cd server && uv run pytest ../tests -c ../tests/pytest.ini
+
+# macOS/Linux: start/stop both services
+./scripts/start.sh && ./scripts/stop.sh
 ```
 
-## Key Patterns
+## How the pieces connect
+`client/src/api.js` calls relative `/api/*` URLs. The Vite dev server proxies `/api` to `localhost:8001` (`client/vite.config.js`), where a router in `server/app/routers/` filters in-memory data and validates it through Pydantic models. The frontend therefore only works through the Vite dev server, or a server that proxies `/api` the same way.
 
-**Filter System**: 4 filters (Time Period, Warehouse, Category, Order Status) apply to all data via query params
-**Data Flow**: Vue filters → `client/src/api.js` → FastAPI → In-memory filtering → Pydantic validation → Computed properties
-**Reactivity**: Raw data in refs (`allOrders`, `inventoryItems`), derived data in computed properties
+The four global filters (time period, warehouse, category, order status) are held in one client-side composable and sent as query params (`month`, `warehouse`, `category`, `status`). Every filtered endpoint applies them with the same two helpers in `server/app/filters.py`.
 
-## API Endpoints
-- `GET /api/inventory` - Filters: warehouse, category
-- `GET /api/orders` - Filters: warehouse, category, status, month
-- `GET /api/dashboard/summary` - All filters
-- `GET /api/demand`, `/api/backlog` - No filters
-- `GET /api/spending/*` - Summary, monthly, categories, transactions
+**Known gap:** the client already calls `/api/tasks` and `/api/purchase-orders`, which the backend doesn't implement yet (see `server/CLAUDE.md`).
 
-## Common Issues
-1. Use unique keys in v-for (not `index`) - use `sku`, `month`, etc.
-2. Validate dates before `.getMonth()` calls
-3. Update Pydantic models when changing JSON data structure
-4. Inventory filters don't support month (no time dimension)
-5. Revenue goals: $800K/month single, $9.6M YTD all months
-
-## File Locations
-- Views: `client/src/views/*.vue`
-- API Client: `client/src/api.js`
-- Backend: `server/main.py`, `server/mock_data.py`
-- Data: `server/data/*.json`
-- Styles: `client/src/App.vue`
-
-## Design System
-- Colors: Slate/gray (#0f172a, #64748b, #e2e8f0)
-- Status: green/blue/yellow/red
-- Charts: Custom SVG, CSS Grid for layouts
-- No emojis in UI
+## Business rules
+- Revenue goals: $800K/month for a single month, $9.6M YTD across all months.

@@ -67,7 +67,7 @@ For backend code:
 Based on this codebase:
 - Filter system usage (warehouse, category, month, status)
 - API endpoint patterns (GET /api/*)
-- Data flow: Vue ’ api.js ’ FastAPI ’ mock_data.py
+- Data flow: Vue ’ api.js ’ FastAPI ’ server/app/routers/ (data from server/app/data.py)
 - Reactivity: allOrders/inventoryItems (refs) ’ computed properties
 - Unique keys: Use sku, month, order_id (NOT index)
 - Date validation before .getMonth() calls

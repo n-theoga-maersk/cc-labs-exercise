@@ -374,9 +374,9 @@ assert abs(calculated - expected) < 0.01
 ### Categories
 - Circuit Boards
 - Sensors
+- Actuators
+- Controllers
 - Power Supplies
-- Connectors
-- Mechanical Components
 
 ### Order Statuses
 - Delivered
@@ -404,24 +404,25 @@ assert abs(calculated - expected) < 0.01
 
 ## Running Tests
 
+Tests use the server's uv environment (`tests/` has none), so run them from `server/`:
+
 ```bash
+cd server
+
 # Run all backend tests
-pytest tests/backend/
+uv run pytest ../tests -c ../tests/pytest.ini
 
 # Run specific test file
-pytest tests/backend/test_orders.py
+uv run pytest ../tests/backend/test_inventory.py -c ../tests/pytest.ini
 
 # Run specific test class
-pytest tests/backend/test_orders.py::TestOrdersEndpoints
+uv run pytest "../tests/backend/test_inventory.py::TestInventoryEndpoints" -c ../tests/pytest.ini
 
 # Run specific test method
-pytest tests/backend/test_orders.py::TestOrdersEndpoints::test_get_all_orders
+uv run pytest "../tests/backend/test_inventory.py::TestInventoryEndpoints::test_get_all_inventory" -c ../tests/pytest.ini
 
-# Run with verbose output
-pytest tests/backend/ -v
-
-# Run with coverage
-pytest tests/backend/ --cov=server
+# Run with coverage of the app package
+uv run pytest ../tests -c ../tests/pytest.ini --cov=app
 ```
 
 ## Example: Complete Test File Template
