@@ -1,9 +1,29 @@
 """
 Tests for purchase order API endpoints (SPEC-0001).
 """
+from datetime import date, timedelta
+
 import pytest
 
 import app.data
+
+
+def days_from_today(days):
+    """ISO date relative to today, so tests don't go stale (delivery dates can't be in the past)."""
+    return (date.today() + timedelta(days=days)).isoformat()
+
+
+def next_leap_day():
+    """The next Feb 29 on or after today."""
+    year = date.today().year
+    while True:
+        try:
+            leap = date(year, 2, 29)
+            if leap >= date.today():
+                return leap.isoformat()
+        except ValueError:
+            pass
+        year += 1
 
 
 @pytest.fixture(autouse=True)
@@ -25,7 +45,7 @@ def po_body():
         "supplier_name": "Northwind Motors",
         "quantity": 10,
         "unit_cost": 445.0,
-        "expected_delivery_date": "2025-10-20",
+        "expected_delivery_date": days_from_today(14),
         "notes": "Expedite",
     }
 
@@ -99,9 +119,19 @@ class TestPurchaseOrderEndpoints:
         )
         assert response.status_code == 422
 
-    @pytest.mark.parametrize("good_date", ["2020-01-01", "2024-02-29"])
-    def test_create_purchase_order_past_delivery_date(self, client, po_body, good_date):
-        """Test that past dates (and leap days) are accepted and round-trip unchanged."""
+    @pytest.mark.parametrize("past_date", [days_from_today(-1), "2020-01-01"])
+    def test_create_purchase_order_past_delivery_date(self, client, po_body, past_date):
+        """Test that delivery dates before today are rejected with a clear message."""
+        response = client.post(
+            "/api/purchase-orders", json={**po_body, "expected_delivery_date": past_date}
+        )
+        assert response.status_code == 422
+        assert "today or later" in str(response.json()["detail"])
+        assert app.data.purchase_orders == []
+
+    @pytest.mark.parametrize("good_date", [days_from_today(0), days_from_today(365), next_leap_day()])
+    def test_create_purchase_order_valid_delivery_date(self, client, po_body, good_date):
+        """Test that today, future dates and a leap day are accepted and round-trip unchanged."""
         response = client.post(
             "/api/purchase-orders", json={**po_body, "expected_delivery_date": good_date}
         )

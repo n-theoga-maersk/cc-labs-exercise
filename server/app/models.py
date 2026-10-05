@@ -16,6 +16,17 @@ def _real_date(v: str) -> str:
 IsoDate = Annotated[str, StringConstraints(strict=True, pattern=r"^\d{4}-\d{2}-\d{2}$"),
                     AfterValidator(_real_date)]
 
+
+def _not_in_past(v: str) -> str:
+    # "Today" is the server's local date, evaluated per request
+    if date.fromisoformat(v) < date.today():
+        raise ValueError("date must be today or later")
+    return v
+
+
+# An IsoDate that is today or later
+FutureIsoDate = Annotated[IsoDate, AfterValidator(_not_in_past)]
+
 PurchaseOrderStatus = Literal["Pending", "Approved", "Rejected"]
 
 
@@ -86,5 +97,5 @@ class CreatePurchaseOrderRequest(BaseModel):
     supplier_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     quantity: int = Field(gt=0)
     unit_cost: float = Field(ge=0)
-    expected_delivery_date: IsoDate
+    expected_delivery_date: FutureIsoDate
     notes: Optional[str] = None

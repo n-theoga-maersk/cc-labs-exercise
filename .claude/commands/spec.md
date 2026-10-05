@@ -22,3 +22,5 @@ Steps:
 6. Leave **Status** as `Draft`, set **Created** to today's date, and leave **Owner** for the user.
 7. Add a row to the index in `docs/specs/README.md`.
 8. Don't implement anything. Report the file path, a summary in two or three lines, and the open questions the user needs to answer.
+
+When the user later answers an open question, move it into the **Decisions** table with the date, and update every section it affects (contract, models, edge cases, tests, acceptance criteria).
