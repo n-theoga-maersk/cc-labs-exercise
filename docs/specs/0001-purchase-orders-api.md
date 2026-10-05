@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft |
+| **Status** | Approved (2026-10-05; all open questions resolved) |
 | **Owner** | |
 | **Created** | 2026-10-05 |
 | **Related** | ADR-0002, ADR-0007; follow-up listed in PR #1 |
@@ -76,6 +76,7 @@ Response (fields `id`, `status` and `created_date` are set by the server):
   - **`fromisoformat`:** the pattern alone would accept `"2025-02-30"`.
   - **`strict=True` on the *string*:** this rejects the number `1760918400`.
   - **Don't type the field as `date`:** with the default lax parsing, a `date` field accepts that Unix timestamp and `"2025-10-20T00:00:00"`. `date` with `Field(strict=True)` rejects every request, because FastAPI validates the already-parsed Python values, not raw JSON.
+- **Status** (decided 2026-10-05, Q5): `PurchaseOrder.status` is constrained to `Literal["Pending", "Approved", "Rejected"]`. `POST` always creates `"Pending"`, and the client can't set it, because the request model has no `status` field. Nothing in this spec moves a PO to `Approved` or `Rejected` (see Follow-ups).
 - **Store:** append to `app.data.purchase_orders`, which is the one intended exception to the read-only rule. Append to that **same list object**; don't rebind the name. `planning.get_backlog` imported the list by reference, and would never see a new list.
 - **Persistence:** POs are lost on restart, which ADR-0002 accepts for this demo. `purchase_orders.json` stays `[]`.
 - **IDs:** `PO-` plus a sequential number, zero-padded to 4 digits (`PO-0001`, `PO-0002`, ...), generated as `f"PO-{len(purchase_orders) + 1:04d}"` (decided 2026-10-05, Q3). Counting the list is safe because POs are never deleted. If deletion is added later, this needs a separate counter. Numbers past 9999 simply grow to 5 digits.
@@ -111,7 +112,7 @@ New file `tests/backend/test_purchase_orders.py` (use the backend-api-test skill
 The module-level store is shared by every test. Add a fixture that snapshots and restores `app.data.purchase_orders`, so the tests stay independent.
 
 ## Acceptance criteria
-- [ ] `POST /api/purchase-orders` with the example body returns 201 and a `PurchaseOrder` with `status`, `id` and `created_date` set. On a fresh server the first `id` is `PO-0001` and the second is `PO-0002`.
+- [ ] `POST /api/purchase-orders` with the example body returns 201 and a `PurchaseOrder` with `status`, `id` and `created_date` set. `status` is `"Pending"`, even if the body tries to send another status. On a fresh server the first `id` is `PO-0001` and the second is `PO-0002`.
 - [ ] Afterwards, `GET /api/backlog` shows `has_purchase_order: true` for item `"2"` and `false` for every other item.
 - [ ] After two `POST`s for item `"2"`, `GET /api/purchase-orders/2` returns a list of both, oldest first.
 - [ ] `GET /api/purchase-orders/1` returns `200 []`, and `GET /api/purchase-orders/999` returns 404.
@@ -126,8 +127,9 @@ The module-level store is shared by every test. Add a fixture that snapshots and
 2. ~~If only one is allowed, should a second `POST` return 409 or replace?~~ **No longer applies** (see Q1).
 3. ~~Plain sequence or prefixed IDs?~~ **Resolved 2026-10-05: prefixed**, `PO-0001` (see Data and models).
 4. ~~Validate `expected_delivery_date`? Must it be in the future?~~ **Resolved 2026-10-05: it must be a valid date, and past dates are allowed** (see Data and models).
-5. Initial `status`: is `"Pending"` right, and what are the other states? This is out of scope here, but it affects the model's documentation.
+5. ~~Initial `status`, and the other states?~~ **Resolved 2026-10-05: `"Pending"` initially; the other states are `"Approved"` and `"Rejected"`** (see Data and models).
 
 ## Follow-ups
+- Approve or reject a PO (for example `PATCH /api/purchase-orders/{id}` with `{"status": ...}`). That needs its own spec for which transitions are allowed, and for whether a rejected PO still counts towards `has_purchase_order`.
 - UI: a "Raise PO" action and PO details in `BacklogDetailModal.vue` (via the vue-expert subagent), with strings in all three locales.
 - `/api/tasks`, the other set of endpoints the client calls that doesn't exist, which needs its own spec.

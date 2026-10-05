@@ -27,4 +27,4 @@ A spec is a plan, not a living document. If the implementation has to differ, up
 ## Index
 | Spec | Title | Status |
 |---|---|---|
-| [0001](0001-purchase-orders-api.md) | Purchase orders API | Draft |
+| [0001](0001-purchase-orders-api.md) | Purchase orders API | Approved |
