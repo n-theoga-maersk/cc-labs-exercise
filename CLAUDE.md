@@ -20,6 +20,8 @@ Keep each fact in exactly one of these files; link to it rather than copying it.
 
 *Why* the architecture is the way it is lives in `docs/adr/`. Read the relevant ADR before reversing one of those decisions, and add a new ADR (see `docs/adr/README.md`) when you make an architectural change.
 
+*What* a feature will do is agreed in a spec in `docs/specs/` (`/spec <description>` drafts one). When implementing a spec, treat its API contract and acceptance criteria as the requirements. Don't build anything still listed under Open questions without asking.
+
 ## Tool rules
 - **vue-expert subagent**: **MANDATORY** for creating or significantly modifying any `.vue` file.
 - **code-reviewer** after significant changes; **security-auditor** for security review.
