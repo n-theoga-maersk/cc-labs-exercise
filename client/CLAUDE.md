@@ -10,7 +10,7 @@ npm run build    # production build; the only check available (no linter or test
 
 ## Structure
 - `src/main.js`: router with **hash history** under Vite `base: "/dashboard/"`, so URLs look like `/dashboard/#/orders`. `views/Backlog.vue` exists but has no route.
-- `src/api.js`: the only place that makes HTTP calls. It uses relative `/api` URLs (proxied by Vite) and leaves out any filter param whose value is `'all'`.
+- `src/api.js`: the API client. It uses relative `/api` URLs (proxied by Vite) and leaves out any filter param whose value is `'all'`. New calls go here. `Reports.vue` is the one exception: it calls `axios` directly. Never hard-code a backend host (see ADR-0003).
 - `src/views/`: one view per route. Views own their data loading and modals.
 - `src/composables/`: shared state lives in **module-level refs**, so every caller of the composable gets the same singleton state (no Pinia, no provide/inject):
   - `useFilters`: the four global filters. `getCurrentFilters()` turns them into API params (`selectedLocation` → `warehouse`, `selectedPeriod` → `month`). Views `watch` the filter refs and refetch.

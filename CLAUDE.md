@@ -18,6 +18,8 @@ This file covers the whole repo. More specific guidance loads only when relevant
 
 Keep each fact in exactly one of these files; link to it rather than copying it.
 
+*Why* the architecture is the way it is lives in `docs/adr/`. Read the relevant ADR before reversing one of those decisions, and add a new ADR (see `docs/adr/README.md`) when you make an architectural change.
+
 ## Tool rules
 - **vue-expert subagent**: **MANDATORY** for creating or significantly modifying any `.vue` file.
 - **code-reviewer** after significant changes; **security-auditor** for security review.
