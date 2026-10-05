@@ -39,7 +39,9 @@ cd server && uv run python main.py
 # Frontend: http://localhost:3000/dashboard/
 cd client && npm install                 # first time
 cd client && npm run dev
-cd client && npm run build               # the only check the client has (no linter, no tests)
+cd client && npm run build               # production build (no linter)
+cd client && npm test                    # Vitest unit tests: src/**/*.test.js, next to the code they test
+cd client && npx vitest run src/utils/currency.test.js   # one file (add -t "<name>" for one test)
 
 # Backend tests (must run from server/; single-file/single-test forms in .claude/rules/testing.md)
 cd server && uv run pytest ../tests -c ../tests/pytest.ini

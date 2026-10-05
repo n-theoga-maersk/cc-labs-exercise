@@ -5,7 +5,8 @@ Guidance for the Vue 3 frontend. Any `.vue` creation or significant change goes 
 ## Commands (from `client/`)
 ```bash
 npm run dev      # http://localhost:3000/dashboard/ (needs the backend on 8001 for /api)
-npm run build    # production build; the only check available (no linter or test runner)
+npm run build    # production build (no linter)
+npm test         # Vitest, node environment: plain-JS unit tests only, no component mounting yet
 ```
 
 ## Structure
