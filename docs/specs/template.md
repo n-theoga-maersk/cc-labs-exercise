@@ -84,5 +84,15 @@ Does this introduce, change or contradict an architectural decision?
 ## Open questions
 - <!-- Anything undecided. A spec can't move to Approved while an item here would change the API contract. -->
 
+## Decisions
+<!--
+When an open question is answered, move it here and delete it from Open questions.
+If a decision is revised before merge, update the row and say so, rather than leaving struck-through text.
+| # | Question | Decision |
+|---|---|---|
+| D1 | ... | ... (YYYY-MM-DD) |
+-->
+
+
 ## Follow-ups
 - <!-- Related work discovered while writing this spec but out of scope. -->

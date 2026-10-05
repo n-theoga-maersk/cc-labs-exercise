@@ -53,7 +53,7 @@ cd server && uv run pytest ../tests -c ../tests/pytest.ini
 
 The four global filters (time period, warehouse, category, order status) are held in one client-side composable and sent as query params (`month`, `warehouse`, `category`, `status`). Every filtered endpoint applies them with the same two helpers in `server/app/filters.py`.
 
-**Known gap:** the client already calls `/api/tasks` and `/api/purchase-orders`, which the backend doesn't implement yet (see `server/CLAUDE.md`).
+**Known gap:** the client already calls `/api/tasks`, which the backend doesn't implement yet (see `server/CLAUDE.md`).
 
 ## Business rules
 - Revenue goals: $800K/month for a single month, $9.6M YTD across all months.

@@ -18,6 +18,7 @@ server/
         ├── inventory.py   /api/inventory
         ├── orders.py      /api/orders
         ├── planning.py    /api/demand, /api/backlog
+        ├── purchase_orders.py  /api/purchase-orders (SPEC-0001; the only endpoints that write)
         ├── dashboard.py   /api/dashboard
         ├── spending.py    /api/spending
         └── reports.py     /api/reports
@@ -31,12 +32,10 @@ Modules import with absolute paths from `server/` (`from app.data import orders`
 2. Register a new router in the `include_router` loop in `app/main.py`.
 3. Add a model to `app/models.py` and set `response_model`. The dashboard, spending and reports endpoints currently return untyped dicts.
 4. Reuse `apply_filters` / `filter_by_month` for the standard filters rather than re-implementing them. A missing value or `'all'` means "don't filter". Category and status match case-insensitively, warehouse matches exactly.
+5. For writes to the shared data and for request-field types (dates, floats), follow `.claude/rules/data.md`.
 
 ## Endpoints the client calls that don't exist yet
-- `GET/POST /api/tasks`, `DELETE /api/tasks/{id}`, `PATCH /api/tasks/{id}` (toggle completion), used by the tasks UI in `client/src/App.vue`.
-- `POST /api/purchase-orders` (body: `CreatePurchaseOrderRequest`) and `GET /api/purchase-orders/{backlog_item_id}`.
-
-The `PurchaseOrder` / `CreatePurchaseOrderRequest` models already exist. Append new purchase orders to `app.data.purchase_orders` so that `/api/backlog` reports `has_purchase_order: true`. They only last until the server restarts.
+- `GET/POST /api/tasks`, `DELETE /api/tasks/{id}`, `PATCH /api/tasks/{id}` (toggle completion), used by the tasks UI in `client/src/App.vue`. These need a spec (`/spec`).
 
 ## Security posture
 Demo only: CORS allows `*` with credentials, and there's no auth and no rate limiting. Don't "fix" these unless asked.

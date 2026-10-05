@@ -9,7 +9,10 @@ paths:
 # Mock data
 
 - `server/app/data.py` loads every `server/data/*.json` file **once at import** into module-level objects that the routers import directly. Restarting the server resets everything, and edits to a JSON file need a restart to show.
-- Treat those objects as read-only and build new lists or dicts instead (`get_backlog` uses `dict(item)`). The only intended in-place change is appending to `purchase_orders`.
+- Treat those objects as read-only and build new lists or dicts instead (`get_backlog` uses `dict(item)`). The only intended in-place change is appending to `purchase_orders`, done by `server/app/routers/purchase_orders.py` under its lock. Always mutate that same list object, and never rebind the name: other routers imported it by reference and would keep seeing the old list.
+- Request-model types in `server/app/models.py`:
+  - Date-only fields use `IsoDate`, a real `YYYY-MM-DD` string, or `FutureIsoDate` (today or later, server-local). Don't use `date`: lax mode accepts Unix timestamps, and `Field(strict=True)` rejects every FastAPI body.
+  - Float inputs need `allow_inf_nan=False`. JSON bodies can contain `NaN`/`Infinity`, and the app's 422 handler in `server/app/main.py` keeps such rejections from becoming 500s.
 - Real values, which tests and the UI rely on:
   - Warehouses: `San Francisco`, `London`, `Tokyo`.
   - Categories: `Circuit Boards`, `Sensors`, `Actuators`, `Controllers`, `Power Supplies`.

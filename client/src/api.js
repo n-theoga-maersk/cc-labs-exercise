@@ -99,7 +99,7 @@ export const api = {
     return response.data
   },
 
-  async getPurchaseOrderByBacklogItem(backlogItemId) {
+  async getPurchaseOrdersByBacklogItem(backlogItemId) {
     const response = await axios.get(`${API_BASE_URL}/purchase-orders/${backlogItemId}`)
     return response.data
   }
