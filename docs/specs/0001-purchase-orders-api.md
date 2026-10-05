@@ -61,7 +61,7 @@ Response (fields `id`, `status` and `created_date` are set by the server):
 ```
 
 ## Data and models
-- **Models:** reuse `PurchaseOrder` and `CreatePurchaseOrderRequest` unchanged in shape. Add constraints to the request: `quantity > 0`, `unit_cost >= 0`, and `supplier_name` not empty. The 422 then comes from Pydantic.
+- **Models:** reuse `PurchaseOrder` and `CreatePurchaseOrderRequest` unchanged in shape. Add constraints to the request: `quantity > 0`, `unit_cost >= 0`, and `supplier_name` not empty. Surrounding whitespace is trimmed, so `"   "` counts as empty and is rejected. The 422 then comes from Pydantic.
 - **`expected_delivery_date`** (decided 2026-10-05, Q4): it must be a real calendar date in `YYYY-MM-DD` form. Past dates are allowed. Keep the field a string in both models, so it is stored and returned exactly as sent:
   ```python
   def _real_date(v: str) -> str:

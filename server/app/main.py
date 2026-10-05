@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import dashboard, inventory, orders, planning, reports, spending
+from app.routers import dashboard, inventory, orders, planning, purchase_orders, reports, spending
 
 app = FastAPI(title="Factory Inventory Management System")
 
@@ -20,5 +20,5 @@ def root():
     return {"message": "Factory Inventory Management System API", "version": "1.0.0"}
 
 
-for module in (inventory, orders, planning, dashboard, spending, reports):
+for module in (inventory, orders, planning, purchase_orders, dashboard, spending, reports):
     app.include_router(module.router)
