@@ -1,5 +1,5 @@
 ---
-description: Draft a feature spec from docs/specs/template.md
+description: Quick one-pass spec draft from docs/specs/template.md, with no questions and unknowns left as open questions (use /specify for the thorough, question-driven version)
 argument-hint: <short feature description>
 ---
 

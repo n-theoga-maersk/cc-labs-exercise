@@ -11,7 +11,10 @@ Write a spec for anything that:
 You don't need one for bug fixes that restore documented behaviour, copy changes or refactors that change no behaviour.
 
 ## How to write one
-- **With Claude Code:** `/spec <short description>`. It creates the next numbered file, researches the code and fills in what it can. Anything it can't confirm goes under *Open questions*.
+- **Thorough, with Claude Code:** `/specify <feature>` (the `.claude/skills/specify` skill; it also triggers on "write a spec" or "spec this feature"). It runs on Opus at high effort, reads the relevant code and every ADR, and asks you one question at a time about anything it can't infer, recording the answers under *Decisions*. Use it for anything that changes an API contract or touches several areas.
+- **Quick, with Claude Code:** `/spec <short description>`. It drafts in one pass, with no questions. It fills in what the code supports and lists everything else under *Open questions*, for you to resolve later. Use it for small changes, or to get a first draft quickly.
+
+Both create the next numbered file from [template.md](template.md), add it to the index below and stop before implementing anything.
 - **By hand:** copy [template.md](template.md) to `NNNN-short-title.md` using the next number, and add it to the index below.
 
 ## Lifecycle

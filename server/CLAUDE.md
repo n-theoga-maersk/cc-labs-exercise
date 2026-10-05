@@ -35,7 +35,7 @@ Modules import with absolute paths from `server/` (`from app.data import orders`
 5. For writes to the shared data and for request-field types (dates, floats), follow `.claude/rules/data.md`.
 
 ## Endpoints the client calls that don't exist yet
-- `GET/POST /api/tasks`, `DELETE /api/tasks/{id}`, `PATCH /api/tasks/{id}` (toggle completion), used by the tasks UI in `client/src/App.vue`. These need a spec (`/spec`).
+- `GET/POST /api/tasks`, `DELETE /api/tasks/{id}`, `PATCH /api/tasks/{id}` (toggle completion), used by the tasks UI in `client/src/App.vue`. These need a spec (`/specify`, or `/spec` for a quick draft).
 
 ## Security posture
 Demo only: CORS allows `*` with credentials, and there's no auth and no rate limiting. Don't "fix" these unless asked.
