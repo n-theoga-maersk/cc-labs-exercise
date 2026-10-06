@@ -204,6 +204,8 @@ class TestPurchaseOrderEndpoints:
     def test_backlog_reflects_purchase_order(self, client, po_body, baseline):
         """Test that has_purchase_order flips to true for that item and nothing else changes."""
         before = {item["id"]: item["has_purchase_order"] for item in client.get("/api/backlog").json()}
+        if not any(po["backlog_item_id"] == "2" for po in baseline):
+            assert before["2"] is False
         client.post("/api/purchase-orders", json=po_body)
         after = {item["id"]: item["has_purchase_order"] for item in client.get("/api/backlog").json()}
 

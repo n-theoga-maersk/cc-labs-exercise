@@ -109,6 +109,7 @@ None. This follows ADR-0007 (one router per area) and ADR-0002 (in-memory store)
 
 ## Edge cases and errors
 - Unknown `backlog_item_id` → 404 on both endpoints, and nothing is appended.
+- An invalid body takes priority over an unknown item: Pydantic validates the body before the route runs, so a `POST` with both an unknown `backlog_item_id` and, for example, a past date returns 422, not 404.
 - Several POs for the same backlog item are all kept and all returned, and `has_purchase_order` is `true` if there is at least one.
 - A known backlog item with no POs → `200 []`, not 404.
 - `expected_delivery_date`:
